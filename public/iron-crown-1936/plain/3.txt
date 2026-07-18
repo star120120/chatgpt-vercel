@@ -1,0 +1,75 @@
+me:'波尔多',owner:'FRA',x:315,y:390,terrain:'丘陵',industry:2,army:4,fort:0,capital:false,n:['paris','lyon','madrid','barcelona']},
+  lyon:{name:'里昂',owner:'FRA',x:425,y:390,terrain:'丘陵',industry:3,army:5,fort:1,capital:false,n:['paris','bordeaux','ruhr','milan','barcelona']},
+  madrid:{name:'马德里',owner:'ESP',x:220,y:485,terrain:'高原',industry:3,army:5,fort:0,capital:true,n:['bordeaux','barcelona']},
+  barcelona:{name:'巴塞罗那',owner:'ESP',x:330,y:505,terrain:'丘陵',industry:3,army:4,fort:0,capital:false,n:['madrid','bordeaux','lyon','milan']},
+  ruhr:{name:'鲁尔',owner:'GER',x:500,y:270,terrain:'城市',industry:5,army:7,fort:1,capital:false,n:['london','paris','lyon','berlin','prague']},
+  berlin:{name:'柏林',owner:'GER',x:600,y:225,terrain:'平原',industry:5,army:8,fort:1,capital:true,n:['ruhr','bavaria','prague','warsaw']},
+  bavaria:{name:'巴伐利亚',owner:'GER',x:565,y:355,terrain:'丘陵',industry:3,army:6,fort:0,capital:false,n:['berlin','ruhr','prague','vienna','milan']},
+  prague:{name:'布拉格',owner:'CZE',x:655,y:330,terrain:'丘陵',industry:4,army:6,fort:2,capital:true,n:['ruhr','berlin','bavaria','warsaw','krakow','vienna']},
+  warsaw:{name:'华沙',owner:'POL',x:750,y:235,terrain:'平原',industry:3,army:6,fort:0,capital:true,n:['berlin','prague','krakow','minsk']},
+  krakow:{name:'克拉科夫',owner:'POL',x:740,y:350,terrain:'丘陵',industry:2,army:5,fort:1,capital:false,n:['warsaw','prague','vienna','budapest','minsk','kiev']},
+  vienna:{name:'维也纳',owner:'AUT',x:640,y:440,terrain:'丘陵',industry:3,army:5,fort:1,capital:false,n:['bavaria','prague','krakow','budapest','milan','belgrade']},
+  milan:{name:'米兰',owner:'ITA',x:515,y:475,terrain:'丘陵',industry:4,army:5,fort:0,capital:false,n:['lyon','barcelona','bavaria','vienna','rome']},
+  rome:{name:'罗马',owner:'ITA',x:555,y:565,terrain:'丘陵',industry:3,army:6,fort:0,capital:true,n:['milan','naples','belgrade']},
+  naples:{name:'那不勒斯',owner:'ITA',x:600,y:635,terrain:'丘陵',industry:2,army:3,fort:0,capital:false,n:['rome','athens']},
+  budapest:{name:'布达佩斯',owner:'HUN',x:745,y:445,terrain:'平原',industry:2,army:4,fort:0,capital:false,n:['vienna','krakow','bucharest','belgrade','kiev']},
+  belgrade:{name:'贝尔格莱德',owner:'YUG',x:690,y:535,terrain:'山地',industry:2,army:5,fort:1,capital:true,n:['vienna','budapest','bucharest','rome','athens']},
+  bucharest:{name:'布加勒斯特',owner:'ROM',x:830,y:495,terrain:'平原',industry:3,army:5,fort:0,capital:true,n:['budapest','belgrade','kiev','istanbul']},
+  athens:{name:'雅典',owner:'GRE',x:745,y:635,terrain:'山地',industry:2,army:4,fort:1,capital:true,n:['belgrade','naples','istanbul']},
+  istanbul:{name:'伊斯坦布尔',owner:'TUR',x:875,y:610,terrain:'城市',industry:3,army:5,fort:1,capital:false,n:['athens','bucharest','ankara']},
+  ankara:{name:'安卡拉',owner:'TUR',x:990,y:625,terrain:'高原',industry:3,army:6,fort:0,capital:true,n:['istanbul']},
+  leningrad:{name:'列宁格勒',owner:'USSR',x:900,y:125,terrain:'森林',industry:4,army:6,fort:1,capital:false,n:['minsk','moscow']},
+  minsk:{name:'明斯克',owner:'USSR',x:865,y:265,terrain:'森林',industry:2,army:6,fort:0,capital:false,n:['warsaw','krakow','leningrad','moscow','kiev']},
+  moscow:{name:'莫斯科',owner:'USSR',x:1010,y:250,terrain:'城市',industry:5,army:9,fort:1,capital:true,n:['leningrad','minsk','kiev']},
+  kiev:{name:'基辅',owner:'USSR',x:915,y:395,terrain:'平原',industry:4,army:7,fort:0,capital:false,n:['krakow','budapest','bucharest','minsk','moscow']}
+};
+const TECHS = {
+  industry:{name:'工业生产',desc:'每级提升全国收入 8%。',icon:'⚙',max:4},
+  doctrine:{name:'陆军学说',desc:'每级提升攻防效率 6%。',icon:'♞',max:4},
+  armor:{name:'装甲技术',desc:'每级提升进攻效率 5%。',icon:'▣',max:4},
+  logistics:{name:'后勤组织',desc:'每级降低招募成本并减少损失。',icon:'↟',max:4},
+  computing:{name:'计算技术',desc:'每级增加每月科研进度。',icon:'⌁',max:4}
+};
+const terrainDefense={平原:0,丘陵:.10,高地:.15,高原:.12,森林:.13,城市:.15,山地:.22};
+let game=null, selectedCountry='GER', selectedProvince=null, actionMode=null, transform={scale:1,x:0,y:0}, dragging=false, dragStart=null;
+
+function clone(o){return JSON.parse(JSON.stringify(o))}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+function pairKey(a,b){return [a,b].sort().join('|')}
+function fmt(n){return Math.round(n)}
+function currentCountry(){return game.countries[game.player]}
+function countryProvinces(code){return Object.entries(game.provinces).filter(([,p])=>p.owner===code)}
+function countryIndustry(code){return countryProvinces(code).reduce((s,[,p])=>s+p.industry,0)}
+function capitalCount(code){return countryProvinces(code).filter(([,p])=>p.capital).length}
+function score(code){return countryProvinces(code).length*5+countryIndustry(code)*2+capitalCount(code)*15}
+function isAtWar(a,b){return !!game.wars[pairKey(a,b)]}
+function relation(a,b){return game.relations[pairKey(a,b)]??0}
+function setRelation(a,b,v){game.relations[pairKey(a,b)]=clamp(v,-100,100)}
+function hexPoints(x,y,r=48){let pts=[];for(let i=0;i<6;i++){let a=Math.PI/3*i+Math.PI/6;pts.push(`${x+r*Math.cos(a)},${y+r*Math.sin(a)}`)}return pts.join(' ')}
+function esc(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+
+function renderCountryGrid(){
+  const grid=document.getElementById('countryGrid');grid.innerHTML='';
+  ['GER','FRA','UK','USSR','ITA','POL','ESP','TUR'].forEach(code=>{
+    const c=COUNTRY_TEMPLATES[code],b=document.createElement('button');
+    b.className='countryCard'+(selectedCountry===code?' selected':'');b.style.setProperty('--c',c.color);
+    b.innerHTML=`<div class="countryName">${c.short}</div><div class="countryMeta">${c.focus}<br>${c.desc}</div>`;
+    b.onclick=()=>{selectedCountry=code;renderCountryGrid()};grid.appendChild(b);
+  });
+}
+function newGame(){
+  const difficulty=document.getElementById('difficulty').value;
+  const countries={};Object.entries(COUNTRY_TEMPLATES).forEach(([k,v])=>countries[k]={...clone(v),tech:{industry:0,doctrine:0,armor:0,logistics:0,computing:0},activeResearch:null,researchProgress:0,alive:true});
+  const provinces=clone(PROVINCE_TEMPLATES);
+  if(difficulty==='easy'){countries[selectedCountry].money+=35;countries[selectedCountry].manpower+=20;countries[selectedCountry].stability+=5}
+  if(difficulty==='hard'){countries[selectedCountry].money-=15;Object.keys(countries).forEach(k=>{if(k!==selectedCountry) countries[k].money+=18})}
+  const relations={};Object.keys(countries).forEach(a=>Object.keys(countries).forEach(b=>{if(a<b)setRelationTemp(relations,a,b,initialRelation(a,b))}));
+  game={version:1,player:selectedCountry,difficulty,year:1936,month:1,turn:1,countries,provinces,relations,wars:{},pacts:{},log:[],tutorialShown:false,gameOver:false};
+  selectedProvince=countryProvinces(selectedCountry)[0]?.[0]||'berlin';actionMode=null;
+  log(`你开始领导${countries[selectedCountry].name}。`,'good');
+  showGame();showTutorial();
+}
+function setRelationTemp(obj,a,b,v){obj[[a,b].sort().join('|')]=v}
+function initialRelation(a,b){
+  const hostile=[['GER','FRA'],['GER','UK'],['GER','POL'],['GER','USSR'],['ITA','FRA'],['USSR','POL']].some(x=>x.includes(a)&&x.includes(b));
+  const friendly=[['FRA','UK'],['GER','IT
