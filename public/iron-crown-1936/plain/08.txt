@@ -1,0 +1,16 @@
+provinces[to];if(!a.n.includes(to)||a.owner!==game.player||b.owner===game.player){toast('目标必须是相邻的外国省份','bad');return}if(!isAtWar(game.player,b.owner)){toast(`尚未与${game.countries[b.owner].short}交战，请先宣战。`,'bad');openDiplomacy(b.owner);return}resolveCombat(from,to,game.player,true)}
+function resolveCombat(from,to,attackerCode,isPlayerAttack=false){
+  const a=game.provinces[from],b=game.provinces[to],defCode=b.owner;if(a.army<2)return false;
+  const ac=game.countries[attackerCode],dc=game.countries[defCode],committed=Math.max(1,Math.floor(a.army*.72));
+  const attack=committed*(1+ac.tech.doctrine*.06+ac.tech.armor*.05)*(0.82+Math.random()*.38);
+  const defense=b.army*(1+dc.tech.doctrine*.06+b.fort*.12+(terrainDefense[b.terrain]||0))*(0.82+Math.random()*.38);
+  let aLoss,dLoss,won=attack>defense;
+  if(won){aLoss=Math.max(1,Math.round(committed*(.18+Math.random()*.16)*(1-ac.tech.logistics*.04)));dLoss=Math.max(1,Math.round(b.army*(.6+Math.random()*.28)));}
+  else{aLoss=Math.max(1,Math.round(committed*(.42+Math.random()*.28)*(1-ac.tech.logistics*.04)));dLoss=Math.max(1,Math.round(b.army*(.22+Math.random()*.25)));}
+  a.army=Math.max(1,a.army-aLoss);b.army=Math.max(0,b.army-dLoss);
+  if(won||b.army<=0){const wasCapital=b.capital;b.owner=attackerCode;b.fort=Math.max(0,b.fort-1);b.army=Math.max(1,committed-aLoss);a.army=Math.max(1,a.army-Math.max(0,b.army-1));ac.warSupport=clamp(ac.warSupport+2,0,100);dc.stability=clamp(dc.stability-(wasCapital?10:3),0,100);log(`${ac.short}攻占${b.name}${wasCapital?'，并夺取一处首都':''}。`,attackerCode===game.player?'good':'bad');}
+  else{log(`${ac.short}对${b.name}的进攻被击退。`,attackerCode===game.player?'bad':'good')}
+  if(isPlayerAttack)showBattleResult(a,b,ac,dc,won,aLoss,dLoss);checkElimination(defCode);return won;
+}
+function showBattleResult(a,b,ac,dc,won,aLoss,dLoss){showModal(`<h2>${won?'进攻成功':'进攻受挫'}</h2><p>${ac.short}在${b.name}与${dc.short}交战。</p><div class="provinceStats"><div class="pstat"><span>我方损失</span><b>${aLoss}</b></div><div class="pstat"><span>敌方损失</span><b>${dLoss}</b></div></div><div class="choices"><button class="choice" onclick="hideModal()"><b>返回战略地图</b><span>${won?'新的领土已经纳入控制。':'需要补充兵力或提升科技。'}</span></button></div>`) }
+function checkElimination(code){if(countryProvinces(code).length===0){game.countries[code].alive=false;Object.keys(game.wars).forEach(k=>{if(k.includes(code))delete game.wars[k]});log(`${game.countries[code].nam
