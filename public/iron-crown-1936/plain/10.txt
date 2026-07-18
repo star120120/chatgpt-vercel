@@ -1,0 +1,16 @@
+].army-game.provinces[x[0]].army);if(attacks.length&&Math.random()<.72)resolveCombat(attacks[0][0],attacks[0][1],code,false)}
+function hasBorder(a,b){return countryProvinces(a).some(([,p])=>p.n.some(n=>game.provinces[n].owner===b))}
+function progressResearch(){Object.entries(game.countries).forEach(([code,c])=>{if(!c.activeResearch||!c.alive)return;c.researchProgress+=c.research+c.tech.computing*2;const cost=50+c.tech[c.activeResearch]*28;if(c.researchProgress>=cost){const t=c.activeResearch;c.tech[t]++;c.activeResearch=null;c.researchProgress=0;log(`${c.short}完成科技：${TECHS[t].name} ${c.tech[t]}级。`,code===game.player?'good':'')}})}
+function advanceDate(){game.month++;game.turn++;if(game.month>12){game.month=1;game.year++}}
+function timelineEvents(){
+  const key=`${game.year}-${String(game.month).padStart(2,'0')}`;
+  if(key==='1936-07'&&game.countries.ESP.alive){game.countries.ESP.stability=clamp(game.countries.ESP.stability-12,0,100);game.provinces.madrid.army+=2;game.provinces.barcelona.army+=2;log('伊比利亚半岛爆发严重政治危机。','bad')}
+  if(key==='1938-03'&&game.countries.GER.alive){game.countries.GER.warSupport=clamp(game.countries.GER.warSupport+6,0,100);setRelation('GER','CZE',relation('GER','CZE')-18);log('中欧局势急剧紧张，各国开始重新评估安全政策。','bad')}
+  if(key==='1939-09'){Object.keys(game.countries).forEach(c=>game.countries[c].warSupport=clamp(game.countries[c].warSupport+3,0,100));log('欧洲进入全面军备竞赛。','bad')}
+}
+const EVENTS=[
+  {title:'工厂劳资冲突',text:'核心工业区爆发罢工，生产面临中断。',choices:[['谈判解决','国库 -18，稳定度 +4',()=>{currentCountry().money-=18;currentCountry().stability+=4}],['强制复工','稳定度 -5，战争支持 +3',()=>{currentCountry().stability-=5;currentCountry().warSupport+=3}]]},
+  {title:'科研团队突破',text:'一支研究团队提出了新的工程方案。',choices:[['追加预算','国库 -20，当前科研 +25',()=>{currentCountry().money-=20;currentCountry().researchProgress+=25}],['扩大基础教育','稳定度 +2，科研能力 +1',()=>{currentCountry().stability+=2;currentCountry().research+=1}]]},
+  {title:'边境摩擦',text:'巡逻部队与邻国发生冲突，舆论要求政府回应。',choices:[['保持克制','稳定度 +2，战争支持 -2',()=>{currentCountry().stability+=2;currentCountry().warSupport-=2}],['强硬回应','战争支持 +5，稳定度 -2',()=>{currentCountry().warSupport+=5;currentCountry().stability-=2}]]},
+  {title:'农业丰收',text:'今年农业产量超出预期，国家财政有所改善。',choices:[['补充国库','国库 +28',()=>{currentCountry().money+=28}],['改善民生','稳定度 +5',()=>{currentCountry().stability+=5}]]},
+  {title:'军官团改革',text:'参谋本部提出一套新的训练制度。',choices:[['全面实施','国库 -15，陆军学说科研 +20',()=>{curre
