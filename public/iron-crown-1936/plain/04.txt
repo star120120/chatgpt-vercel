@@ -1,0 +1,18 @@
+A'],['ROM','GER'],['CZE','FRA'],['AUT','HUN']].some(x=>x.includes(a)&&x.includes(b));
+  return hostile?-35:friendly?25:Math.floor(Math.random()*21)-10;
+}
+function showGame(){document.getElementById('startScreen').classList.add('hidden');document.getElementById('gameScreen').classList.remove('hidden');buildMap();renderAll();}
+function returnMenu(){if(confirm('返回主菜单？当前进度会自动保存。')){saveGame(false);document.getElementById('gameScreen').classList.add('hidden');document.getElementById('startScreen').classList.remove('hidden');closeDrawer();}}
+function saveGame(show=true){if(!game)return;localStorage.setItem('ironCrown1936Save',JSON.stringify(game));if(show)toast('游戏已保存','good')}
+function loadGame(){try{const s=localStorage.getItem('ironCrown1936Save');if(!s){toast('还没有存档','bad');return}game=JSON.parse(s);selectedCountry=game.player;selectedProvince=countryProvinces(game.player)[0]?.[0]||Object.keys(game.provinces)[0];actionMode=null;showGame();toast('已读取存档','good')}catch(e){toast('存档读取失败','bad')}}
+
+function buildMap(){
+  const con=document.getElementById('connections'),grp=document.getElementById('provinces');con.innerHTML='';grp.innerHTML='';
+  const drawn=new Set();
+  Object.entries(game.provinces).forEach(([id,p])=>p.n.forEach(n=>{const k=[id,n].sort().join('|');if(!drawn.has(k)&&game.provinces[n]){drawn.add(k);const q=game.provinces[n];const line=document.createElementNS('http://www.w3.org/2000/svg','line');line.setAttribute('x1',p.x);line.setAttribute('y1',p.y);line.setAttribute('x2',q.x);line.setAttribute('y2',q.y);line.setAttribute('class','link');con.appendChild(line)}}));
+  Object.entries(game.provinces).forEach(([id,p])=>{
+    const g=document.createElementNS('http://www.w3.org/2000/svg','g');g.setAttribute('class','province');g.dataset.id=id;
+    const poly=document.createElementNS('http://www.w3.org/2000/svg','polygon');poly.setAttribute('points',hexPoints(p.x,p.y));poly.setAttribute('class','provinceHex');poly.setAttribute('filter','url(#shadow)');
+    const t=document.createElementNS('http://www.w3.org/2000/svg','text');t.setAttribute('x',p.x);t.setAttribute('y',p.y-8);t.setAttribute('class','provinceLabel');t.textContent=p.name;
+    const a=document.createElementNS('http://www.w3.org/2000/svg','text');a.setAttribute('x',p.x);a.setAttribute('y',p.y+9);a.setAttribute('class','armyLabel');a.textContent=`⚔ ${p.army}`;
+    const d=document.createElementNS
