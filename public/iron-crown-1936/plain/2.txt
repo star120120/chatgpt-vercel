@@ -1,0 +1,90 @@
+terNote">建议横屏游玩。游戏会自动保存在当前浏览器中；不需要键盘或鼠标。</div>
+  </div>
+</div>
+
+<div id="gameScreen" class="screen hidden">
+  <header class="topbar">
+    <div class="brand"><div class="crest">♜</div><div class="brandText"><b>铁与王冠</b><span id="playerNameTop">国家</span></div></div>
+    <div class="stats">
+      <div class="stat"><span class="k">国库</span><span class="v" id="moneyStat">0</span></div>
+      <div class="stat"><span class="k">工业</span><span class="v" id="industryStat">0</span></div>
+      <div class="stat"><span class="k">人力</span><span class="v" id="manpowerStat">0</span></div>
+      <div class="stat"><span class="k">稳定度</span><span class="v" id="stabilityStat">0%</span></div>
+      <div class="stat"><span class="k">战争支持</span><span class="v" id="warStat">0%</span></div>
+      <div class="stat"><span class="k">胜利点</span><span class="v" id="scoreStat">0</span></div>
+    </div>
+    <div class="turnBox"><div class="date" id="dateStat">1936年1月<span>第 1 回合</span></div><button id="endTurnBtn" class="endTurn">结束本月</button></div>
+  </header>
+
+  <main class="main">
+    <aside class="panel leftPanel">
+      <div class="panelTitle">国家概览</div>
+      <div class="countryHeader"><div id="countryDot" class="flagDot"></div><div><b id="playerCountryName">国家</b><span id="governmentText">政府</span></div></div>
+      <div class="meter"><div class="meterTop"><span>稳定度</span><b id="stabilityLeft">0%</b></div><div class="bar"><div id="stabilityBar" class="fill"></div></div></div>
+      <div class="meter"><div class="meterTop"><span>战争支持</span><b id="warLeft">0%</b></div><div class="bar"><div id="warBar" class="fill" style="background:linear-gradient(90deg,#b85960,#df7b81)"></div></div></div>
+      <div class="objectives"><div class="panelTitle">战略目标</div><div id="objectivesList"></div></div>
+      <div class="panelTitle" style="margin-top:15px">快捷操作</div>
+      <div style="display:grid;gap:8px">
+        <button id="saveBtn" class="secondary">保存游戏</button>
+        <button id="tutorialBtn" class="secondary">玩法说明</button>
+        <button id="restartBtn" class="secondary danger">返回主菜单</button>
+      </div>
+    </aside>
+
+    <section class="mapWrap" id="mapWrap">
+      <svg id="mapSvg" viewBox="0 0 1120 720" aria-label="欧洲战略地图">
+        <defs>
+          <pattern id="gridPattern" width="34" height="34" patternUnits="userSpaceOnUse"><path d="M 34 0 L 0 0 0 34" fill="none" stroke="#7aa0bd" stroke-opacity=".045" stroke-width="1"/></pattern>
+          <filter id="shadow"><feDropShadow dx="0" dy="4" stdDeviation="4" flood-opacity=".35"/></filter>
+        </defs>
+        <rect width="1120" height="720" fill="url(#gridPattern)"/>
+        <path d="M68,85 C160,34 276,35 354,75 C412,105 487,74 560,60 C680,38 823,75 940,143 C1040,204 1088,293 1067,397 C1043,515 937,590 822,640 C674,705 505,688 360,648 C233,613 115,553 71,465 C24,370 20,200 68,85Z" fill="#173149" opacity=".25"/>
+        <text x="135" y="520" class="seaLabel">大西洋</text><text x="840" y="585" class="seaLabel">黑海</text><text x="475" y="665" class="seaLabel">地中海</text>
+        <g id="connections"></g><g id="provinces"></g>
+      </svg>
+      <div class="mapHint">点选省份查看信息；在右侧执行招募、建设、调动或进攻。</div>
+      <div class="zoomControls"><button id="zoomOut">−</button><button id="zoomReset">◎</button><button id="zoomIn">＋</button></div>
+    </section>
+
+    <aside id="rightPanel" class="panel rightPanel">
+      <div class="panelTitle">省份与行动</div>
+      <div id="provinceInspector"><div class="provinceCard"><h2>请选择省份</h2><div class="ownerLine">触摸地图上的区域以查看详细信息。</div></div></div>
+    </aside>
+  </main>
+
+  <nav class="bottomNav">
+    <button class="navBtn active" data-nav="map">战略地图</button>
+    <button class="navBtn" data-nav="economy">国家经济</button>
+    <button class="navBtn" data-nav="research">科技研究</button>
+    <button class="navBtn" data-nav="diplomacy">外交关系</button>
+    <button class="navBtn" data-nav="log">战报日志</button>
+  </nav>
+</div>
+
+<div id="drawer" class="drawer hidden"></div>
+<div id="modalBackdrop" class="modalBackdrop hidden"><div id="modal" class="modal"></div></div>
+<div id="toast" class="toast hidden"></div>
+
+<script>
+'use strict';
+const COUNTRY_TEMPLATES = {
+  GER:{name:'德意志国',short:'德国',color:'#6c757d',government:'威权政府',focus:'工业与装甲',desc:'工业强大、军队精锐，但外交环境恶劣。',money:125,manpower:82,stability:68,warSupport:58,research:11,aggr:.82},
+  FRA:{name:'法兰西共和国',short:'法国',color:'#3e78b2',government:'议会共和国',focus:'防御与外交',desc:'资源均衡、要塞坚固，适合稳健经营。',money:118,manpower:74,stability:62,warSupport:42,research:10,aggr:.34},
+  UK:{name:'大不列颠联合王国',short:'英国',color:'#b0545b',government:'君主立宪制',focus:'金融与科技',desc:'国库充裕、科研领先，但本土兵力有限。',money:145,manpower:58,stability:76,warSupport:46,research:13,aggr:.38},
+  USSR:{name:'苏维埃联盟',short:'苏联',color:'#b8403e',government:'社会主义共和国',focus:'人力与纵深',desc:'人力雄厚、领土广阔，早期效率较低。',money:105,manpower:128,stability:57,warSupport:64,research:9,aggr:.62},
+  ITA:{name:'意大利王国',short:'意大利',color:'#4f8b62',government:'威权王国',focus:'机动作战',desc:'发展空间大、地中海位置关键。',money:96,manpower:66,stability:65,warSupport:55,research:9,aggr:.58},
+  POL:{name:'波兰共和国',short:'波兰',color:'#d6b6b8',government:'总统共和国',focus:'边境防卫',desc:'地处战略要冲，需要谨慎平衡列强。',money:82,manpower:64,stability:60,warSupport:50,research:8,aggr:.28},
+  ESP:{name:'西班牙共和国',short:'西班牙',color:'#c99b42',government:'共和国',focus:'重建与改革',desc:'初期国内动荡，恢复后潜力可观。',money:72,manpower:62,stability:43,warSupport:38,research:7,aggr:.22},
+  TUR:{name:'土耳其共和国',short:'土耳其',color:'#a84d46',government:'共和国',focus:'区域平衡',desc:'掌握海峡，外交空间较大。',money:80,manpower:59,stability:66,warSupport:44,research:8,aggr:.31},
+  CZE:{name:'捷克斯洛伐克共和国',short:'捷克斯洛伐克',color:'#7e91b6',government:'议会共和国',focus:'要塞与工业',desc:'工业不错，但面临强邻压力。',money:86,manpower:45,stability:68,warSupport:45,research:9,aggr:.18},
+  ROM:{name:'罗马尼亚王国',short:'罗马尼亚',color:'#bea24b',government:'君主制',focus:'资源出口',desc:'石油资源带来稳定收入。',money:84,manpower:54,stability:59,warSupport:47,research:7,aggr:.33},
+  YUG:{name:'南斯拉夫王国',short:'南斯拉夫',color:'#6f8c74',government:'君主制',focus:'多民族治理',desc:'地形复杂，防御能力较强。',money:75,manpower:53,stability:52,warSupport:41,research:7,aggr:.22},
+  GRE:{name:'希腊王国',short:'希腊',color:'#6d94c5',government:'君主制',focus:'山地防御',desc:'国力有限，但山地易守难攻。',money:66,manpower:39,stability:55,warSupport:44,research:6,aggr:.18},
+  AUT:{name:'奥地利联邦国',short:'奥地利',color:'#9a7d73',government:'联邦共和国',focus:'中欧平衡',desc:'领土有限，必须依靠外交与防御。',money:70,manpower:34,stability:61,warSupport:36,research:7,aggr:.12},
+  HUN:{name:'匈牙利王国',short:'匈牙利',color:'#8a7567',government:'摄政王国',focus:'领土修正',desc:'希望改变战后边界，地区野心较强。',money:72,manpower:42,stability:58,warSupport:49,research:7,aggr:.41}
+};
+const PROVINCE_TEMPLATES = {
+  scotland:{name:'苏格兰',owner:'UK',x:290,y:105,terrain:'高地',industry:2,army:3,fort:0,capital:false,n:['london']},
+  london:{name:'伦敦',owner:'UK',x:310,y:205,terrain:'平原',industry:5,army:7,fort:1,capital:true,n:['scotland','paris','ruhr']},
+  paris:{name:'巴黎',owner:'FRA',x:380,y:285,terrain:'平原',industry:4,army:7,fort:1,capital:true,n:['london','bordeaux','lyon','ruhr']},
+  bordeaux:{na
