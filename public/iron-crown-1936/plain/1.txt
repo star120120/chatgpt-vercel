@@ -1,0 +1,41 @@
+;text-shadow:0 2px 2px #000}.armyLabel{fill:#eef5ff;font-size:10px;font-weight:900;text-anchor:middle;pointer-events:none}.devLabel{fill:#d8e4f2;font-size:9px;text-anchor:middle;pointer-events:none}
+  .mapHint{position:absolute;left:12px;bottom:12px;background:rgba(7,13,23,.82);border:1px solid #314159;border-radius:10px;padding:8px 10px;color:#aebcd0;font-size:11px;backdrop-filter:blur(8px)}
+  .zoomControls{position:absolute;right:10px;bottom:10px;display:flex;gap:6px}.zoomControls button{width:36px;height:36px;border-radius:10px;background:rgba(13,22,36,.9);border:1px solid #354760;font-size:19px}
+  .provinceCard{background:#142138;border:1px solid #2d405d;border-radius:15px;padding:13px}.provinceCard h2{font-size:19px;margin:0 0 3px}.ownerLine{font-size:12px;color:var(--muted)}
+  .provinceStats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}.pstat{background:#0f192a;border:1px solid #24344b;border-radius:10px;padding:8px}.pstat span{font-size:10px;color:#8fa1ba;display:block}.pstat b{font-size:14px}
+  .actionSection{margin-top:12px}.actionGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.actionBtn{background:#1a2940;border:1px solid #324761;border-radius:10px;padding:10px 8px;font-size:12px;min-height:44px}.actionBtn:disabled{opacity:.38;cursor:not-allowed}.actionBtn strong{display:block;font-size:12px}.actionBtn small{display:block;color:#9fb0c7;margin-top:2px;font-size:9px}
+  .modeNotice{background:#3a2a18;border:1px solid #735127;color:#f1d9a6;border-radius:10px;padding:9px;font-size:11px;line-height:1.45;margin-top:10px}
+  .bottomNav{padding:8px 10px calc(8px + env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(5,1fr);gap:7px;background:#0a111d;border-top:1px solid #26344a;z-index:30}.navBtn{background:#111c2e;border:1px solid #24344b;border-radius:10px;padding:9px 5px;color:#aebbd0;font-size:11px}.navBtn.active{border-color:#d2ad58;color:#f1d48c;background:#1d2634}
+
+  .drawer{position:fixed;left:12%;right:12%;bottom:calc(70px + env(safe-area-inset-bottom));max-height:70vh;background:#111c2e;border:1px solid #354862;border-radius:18px;box-shadow:var(--shadow);z-index:50;overflow:auto;padding:16px}.drawerHeader{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}.drawerHeader h3{margin:0}.closeBtn{width:34px;height:34px;border-radius:10px;background:#233149;border:1px solid #3a4d67}.cardGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.infoCard{background:#152238;border:1px solid #2b3d59;border-radius:13px;padding:12px}.infoCard h4{margin:0 0 6px;font-size:14px}.infoCard p{font-size:11px;color:var(--muted);line-height:1.5;margin:0 0 9px}.infoCard .row{display:flex;justify-content:space-between;color:#cdd7e5;font-size:11px;margin-top:5px}
+  .diploRow{display:grid;grid-template-columns:44px 1fr auto;gap:10px;align-items:center;padding:10px;border-bottom:1px solid #25354c}.diploRow:last-child{border-bottom:0}.diploDot{width:32px;height:32px;border-radius:50%;background:var(--c)}.diploName{font-weight:800;font-size:13px}.diploMeta{font-size:10px;color:var(--muted);margin-top:2px}.diploActions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+  .logList{font-size:12px;line-height:1.55}.logItem{padding:8px 0;border-bottom:1px solid #26344a}.logItem time{color:#d5b768;font-weight:700;margin-right:6px}.logItem.bad{color:#ef9aa0}.logItem.good{color:#8fd0aa}
+  .modalBackdrop{position:fixed;inset:0;background:rgba(0,0,0,.68);display:grid;place-items:center;z-index:100;padding:20px;backdrop-filter:blur(4px)}
+  .modal{width:min(560px,96vw);max-height:88vh;overflow:auto;background:#131f32;border:1px solid #465972;border-radius:20px;box-shadow:0 22px 70px rgba(0,0,0,.55);padding:20px}.modal h2{font-family:Georgia,"Songti SC",serif;margin:0 0 8px;font-size:27px}.modal p{color:#b8c5d6;line-height:1.7;font-size:14px}.choices{display:grid;gap:9px;margin-top:14px}.choice{background:#1a2940;border:1px solid #334963;border-radius:12px;padding:12px;text-align:left}.choice b{display:block}.choice span{display:block;color:#9fb0c7;font-size:11px;margin-top:4px}
+  .toast{position:fixed;top:88px;left:50%;transform:translateX(-50%);z-index:200;background:#1b2b42;border:1px solid #48617d;border-radius:12px;padding:10px 14px;box-shadow:var(--shadow);font-size:12px;max-width:80vw;text-align:center;animation:toastIn .2s ease}.toast.bad{border-color:#934b52;background:#3a2025}.toast.good{border-color:#3f805f;background:#173629}@keyframes toastIn{from{opacity:0;transform:translate(-50%,-8px)}to{opacity:1;transform:translate(-50%,0)}}
+  .tutorialStep{border-left:3px solid var(--gold);padding-left:12px;margin:12px 0}.tutorialStep b{display:block;margin-bottom:4px}.tutorialStep span{color:var(--muted);font-size:12px;line-height:1.5}
+  @media(max-width:1050px){.main{grid-template-columns:0 1fr 280px}.leftPanel{display:none}.brand{min-width:40px}.brandText{display:none}.countryGrid{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:760px){.topbar{grid-template-columns:auto 1fr}.stats{grid-column:1/3;grid-row:2}.turnBox{grid-column:2;grid-row:1;justify-content:flex-end}.main{grid-template-columns:1fr}.rightPanel{position:fixed;right:8px;left:8px;bottom:calc(66px + env(safe-area-inset-bottom));max-height:43vh;border:1px solid #32445e;border-radius:16px;z-index:35;box-shadow:var(--shadow);transform:translateY(calc(100% + 90px));transition:transform .22s ease}.rightPanel.open{transform:translateY(0)}.mapHint{bottom:8px}.drawer{left:8px;right:8px;bottom:calc(66px + env(safe-area-inset-bottom));max-height:72vh}.cardGrid{grid-template-columns:1fr}.countryGrid{grid-template-columns:1fr 1fr}.startPanel{padding:14px}.subtitle{font-size:14px}.topbar{padding-left:8px;padding-right:8px}.stat{min-width:80px;padding:6px 8px}.bottomNav{gap:5px;padding-left:6px;padding-right:6px}.navBtn{font-size:10px}.date{min-width:76px;font-size:12px}.endTurn{padding:9px 10px;font-size:12px}}
+  @media(max-width:470px){.countryGrid{grid-template-columns:1fr}.countryCard{min-height:90px}.startOptions{align-items:stretch}.selectWrap{justify-content:space-between;width:100%}.primary{width:100%}}
+</style>
+</head>
+<body>
+<div id="startScreen" class="screen">
+  <div class="hero">
+    <div class="eyebrow">Grand Strategy · iPad Edition</div>
+    <h1>铁与王冠：1936</h1>
+    <p class="subtitle">一款原创的轻量级历史大战略沙盘。管理国家、发展工业、研究科技、处理外交，在瞬息万变的欧洲改写历史。</p>
+    <div class="startPanel">
+      <div class="sectionTitle">选择你的国家</div>
+      <div id="countryGrid" class="countryGrid"></div>
+      <div class="startOptions">
+        <div class="selectWrap">难度
+          <select id="difficulty"><option value="easy">新手</option><option value="normal" selected>标准</option><option value="hard">老兵</option></select>
+        </div>
+        <div style="display:flex;gap:9px;flex-wrap:wrap">
+          <button id="loadBtn" class="secondary">读取存档</button>
+          <button id="startBtn" class="primary">开始新游戏</button>
+        </div>
+      </div>
+    </div>
+    <div class="foo
