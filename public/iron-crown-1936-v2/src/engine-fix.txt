@@ -1,0 +1,102 @@
+'use strict';
+function migrateResearchModel(game){
+  if(!game||!game.countries)return game;
+  for(const [code,c] of Object.entries(game.countries)){
+    const fallback=COUNTRY[code]?.research||8;
+    if(!Number.isFinite(c.researchRate)) c.researchRate=fallback;
+    if(c.activeResearch===undefined){
+      c.activeResearch=typeof c.research==='string'?c.research:null;
+    }
+    c.research=null;
+    if(!Number.isFinite(c.researchProgress)) c.researchProgress=0;
+  }
+  game.version=2.2;
+  return game;
+}
+const _createGameV21=createGame;
+createGame=function(player='GER',difficulty='normal'){
+  const game=_createGameV21(player,difficulty);
+  migrateResearchModel(game);
+  return game;
+};
+function startResearch(code,id){
+  const c=G.countries[code];
+  if(!c||c.activeResearch||!TECH[id]||c.tech[id]>=4)return false;
+  c.activeResearch=id;
+  c.researchProgress=0;
+  return true;
+}
+function monthlyResearch(code){
+  const c=G.countries[code];
+  if(!c?.activeResearch)return;
+  const id=c.activeResearch;
+  const rate=Math.max(1,Number(c.researchRate)||COUNTRY[code]?.research||8);
+  const cost=TECH[id].cost+c.tech[id]*35;
+  c.researchProgress=Math.min(cost,c.researchProgress+rate*(1+c.tech.radio*.04));
+  if(c.researchProgress>=cost){
+    c.tech[id]++;
+    c.activeResearch=null;
+    c.researchProgress=0;
+    log(`${c.short}完成科技：${TECH[id].name} ${c.tech[id]}级。`,code===G.player?'good':'');
+  }
+}
+function annexCountry(a,b,reason){
+  for(const s of countryStates(b)){s.owner=a;s.controller=a;for(const d of s.divisions)d.owner=a}
+  G.countries[b].alive=false;G.countries[a].population+=G.countries[b].population*.72;G.countries[a].manpower+=G.countries[b].manpower*.45;
+  log(`${reason}：${G.countries[b].short}被${G.countries[a].short}吞并。`,'bad');
+}
+function resolvePendingEvent(choice){
+  if(G.pendingEvent==='anschluss'){
+    if(choice==='accept')annexCountry('GER','AUT','德奥合并');
+    else{setRelation('GER','AUT',-85);G.countries.GER.war+=5;G.countries.GER.stability-=3;log('奥地利拒绝合并要求，中欧危机加剧。','bad')}
+  }
+  G.pendingEvent=null;
+}
+function randomEvent(){
+  if(Math.random()>.16)return;
+  const c=G.countries[G.player],r=Math.random();
+  if(r<.25){c.stock.rifle+=25000;log('军工企业提前完成一批步枪订单。','good')}
+  else if(r<.5){c.stability=clamp(c.stability-3,0,100);log('国内劳资冲突导致稳定度下降。','bad')}
+  else if(r<.75){c.pp+=18;log('政府改组提升了行政效率。','good')}
+  else{c.manpower+=45;log('新一轮征兵登记增加了可用人力。','good')}
+}
+function aiTurn(){for(const [code,c] of Object.entries(G.countries)){if(code===G.player||!c.alive)continue;aiResearch(code);aiBuild(code);aiTrain(code);aiDiplomacy(code);aiFront(code)}}
+function aiResearch(code){
+  const c=G.countries[code];
+  if(!c.activeResearch){const ids=Object.keys(TECH).filter(x=>c.tech[x]<4);if(ids.length)startResearch(code,ids[Math.floor(Math.random()*ids.length)])}
+}
+function aiBuild(code){
+  const own=countryStates(code);if(!own.length)return;
+  const active=own.filter(s=>s.build).length;
+  if(active<Math.max(1,Math.floor(totalFactories(code,'civ')/5))&&Math.random()<.45){
+    const s=own[Math.floor(Math.random()*own.length)];
+    if(!s.build){const type=Math.random()<.55?'mil':Math.random()<.65?'infra':'fort';const costs={mil:110,infra:75,fort:65};s.build={type,progress:0,cost:costs[type]}}
+  }
+}
+function aiTrain(code){
+  const c=G.countries[code];if(c.manpower<20||c.training.length>3||Math.random()>.38)return;
+  const own=countryStates(code);if(!own.length)return;
+  const type=c.stock.tank>400&&Math.random()<.16?'arm':c.stock.truck>3000&&Math.random()<.18?'mot':'inf',t=TEMPLATE[type];
+  if(c.manpower>=t.mp/1000){c.manpower-=t.mp/1000;c.training.push({stateId:own[Math.floor(Math.random()*own.length)].id,type,months:type==='arm'?5:type==='mot'?4:3,progress:0})}
+}
+function aiDiplomacy(code){
+  const c=G.countries[code];if(G.year<1937||Math.random()>.035*c.ai)return;
+  const targets=Object.keys(G.countries).filter(o=>o!==code&&G.countries[o].alive&&!atWar(code,o)&&hasBorder(code,o)&&relation(code,o)<-25);
+  if(targets.length)declareWar(code,targets[Math.floor(Math.random()*targets.length)]);
+}
+function aiFront(code){
+  const wars=activeWars(code);if(!wars.length)return;const own=countryStates(code);
+  for(const s of own){const border=stateNeighbors(s.id).some(n=>wars.includes(G.states[n].owner));if(border&&s.divisions.length<2){const rear=own.find(x=>x.divisions.length>3&&stateNeighbors(x.id).includes(s.id));if(rear){const d=rear.divisions.pop();s.divisions.push(d)}}}
+  const attacks=[];
+  for(const s of own)for(const n of stateNeighbors(s.id)){const t=G.states[n];if(wars.includes(t.owner)&&s.divisions.length){const atk=s.divisions.reduce((x,d)=>x+divisionPower(d,'attack',s),0),def=t.divisions.reduce((x,d)=>x+divisionPower(d,'defense',t),0)*(1+terrainDefense(t.terrain));if(atk>def*.8)attacks.push({from:s.id,to:n,ratio:atk/Math.max(1,def)})}}
+  attacks.sort((a,b)=>b.ratio-a.ratio);if(attacks.length&&Math.random()<.7){const a=attacks[0];attackState(a.from,a.to,G.states[a.from].divisions.length,code)}
+}
+function checkEnd(){
+  if(!countryAlive(G.player)){G.gameOver=true;G.endReason='你的政府已经失去全部领土。'}
+  else if(G.year>1945){G.gameOver=true;G.endReason=`战争时代结束。最终胜利点：${nationalSummary(G.player).victory}`}
+}
+function saveGame(notify=true){if(G){migrateResearchModel(G);localStorage.setItem('ironCrown1936V2',JSON.stringify(G))}return notify}
+function loadGame(){
+  const raw=localStorage.getItem('ironCrown1936V2');if(!raw)return null;
+  try{G=migrateResearchModel(JSON.parse(raw));return G}catch{return null}
+}
