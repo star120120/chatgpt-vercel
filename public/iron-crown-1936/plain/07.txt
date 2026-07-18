@@ -1,0 +1,14 @@
+ 25</small></button>
+    <button class="actionBtn" ${mine?'':'disabled'} onclick="recruitArmy()"><strong>招募部队</strong><small>国库 30 / 人力 12</small></button>
+    <button class="actionBtn" ${mine&&p.army>1&&adjacentFriends?'':'disabled'} onclick="setMode('move')"><strong>调动部队</strong><small>转移一半兵力</small></button>
+    <button class="actionBtn danger" ${mine&&p.army>1&&adjacentEnemies?'':'disabled'} onclick="setMode('attack')"><strong>发起进攻</strong><small>${adjacentEnemies?'选择相邻敌区':'无相邻敌区'}</small></button>
+    <button class="actionBtn" ${mine||atWar?'disabled':''} onclick="openDiplomacy('${p.owner}')"><strong>外交交涉</strong><small>关系 ${relation(game.player,p.owner)}</small></button>
+  </div>${actionMode?`<div class="modeNotice">当前为“${actionMode==='attack'?'进攻':'调动'}”模式。请在地图上选择一个高亮的相邻省份。</div>`:''}${!mine&&atWar?`<div class="modeNotice">你正在与${owner.short}交战。请先选择己方相邻省份，再发起进攻。</div>`:''}</div>`;
+}
+function setMode(m){actionMode=m;toast(m==='attack'?'请选择相邻的敌方省份':'请选择相邻的己方省份');renderAll()}
+function spend(money,mp=0){const c=currentCountry();if(c.money<money){toast('国库不足','bad');return false}if(c.manpower<mp){toast('可用人力不足','bad');return false}c.money-=money;c.manpower-=mp;return true}
+function developProvince(){const p=game.provinces[selectedProvince];if(p.owner!==game.player)return;if(p.industry>=6){toast('该省工业已达到上限','bad');return}if(!spend(35))return;p.industry++;currentCountry().stability=clamp(currentCountry().stability+1,0,100);log(`${p.name}完成一轮工业扩建。`,'good');renderAll()}
+function fortifyProvince(){const p=game.provinces[selectedProvince];if(p.owner!==game.player)return;if(p.fort>=4){toast('该省要塞已达到上限','bad');return}if(!spend(25))return;p.fort++;log(`${p.name}新建防御工事。`,'good');renderAll()}
+function recruitArmy(){const p=game.provinces[selectedProvince],c=currentCountry();if(p.owner!==game.player)return;const cost=Math.max(20,30-c.tech.logistics*2);if(!spend(cost,12))return;p.army+=3+c.tech.logistics;log(`${p.name}组建了新的作战部队。`,'good');renderAll()}
+function moveArmy(from,to){const a=game.provinces[from],b=game.provinces[to];if(!a.n.includes(to)||a.owner!==game.player||b.owner!==game.player){toast('只能调动到相邻的己方省份','bad');return}const moved=Math.max(1,Math.floor(a.army/2));if(a.army-moved<1){toast('必须留下至少 1 点驻军','bad');return}a.army-=moved;b.army+=moved;log(`从${a.name}向${b.name}调动 ${moved} 点兵力。`,'good')}
+function attemptAttack(from,to){const a=game.provinces[from],b=game.
