@@ -1,0 +1,15 @@
+ntent=score(game.player);document.getElementById('dateStat').innerHTML=`${game.year}年${game.month}月<span>第 ${game.turn} 回合</span>`;
+}
+function renderLeft(){
+  const c=currentCountry();document.getElementById('countryDot').style.setProperty('--c',c.color);document.getElementById('countryDot').style.background=c.color;document.getElementById('playerCountryName').textContent=c.name;document.getElementById('governmentText').textContent=c.government;document.getElementById('stabilityLeft').textContent=`${fmt(c.stability)}%`;document.getElementById('warLeft').textContent=`${fmt(c.warSupport)}%`;document.getElementById('stabilityBar').style.width=`${c.stability}%`;document.getElementById('warBar').style.width=`${c.warSupport}%`;
+  const obj=[];const prov=countryProvinces(game.player).length;obj.push({b:'维护国家统一',p:`当前控制 ${prov} 个省份。失去全部省份即告失败。`});obj.push({b:'工业现代化',p:`将全国工业提升至 ${Math.max(18,countryIndustry(game.player)+5)}。`});obj.push({b:'大国地位',p:`在 1945 年前达到 120 胜利点。当前 ${score(game.player)}。`});
+  document.getElementById('objectivesList').innerHTML=obj.map(x=>`<div class="objective"><b>${x.b}</b><p>${x.p}</p></div>`).join('');
+}
+function renderInspector(){
+  const host=document.getElementById('provinceInspector');if(!selectedProvince||!game.provinces[selectedProvince]){host.innerHTML='<div class="provinceCard"><h2>请选择省份</h2></div>';return}
+  const p=game.provinces[selectedProvince],owner=game.countries[p.owner],mine=p.owner===game.player,atWar=!mine&&isAtWar(game.player,p.owner),originMine=mine;
+  const adjacentEnemies=p.n.some(n=>game.provinces[n].owner!==p.owner);const adjacentFriends=p.n.some(n=>game.provinces[n].owner===p.owner);
+  host.innerHTML=`<div class="provinceCard"><h2>${p.name}${p.capital?' ★':''}</h2><div class="ownerLine">${owner.name} · ${p.terrain}</div><div class="provinceStats"><div class="pstat"><span>驻军</span><b>${p.army}</b></div><div class="pstat"><span>工业</span><b>${p.industry}</b></div><div class="pstat"><span>要塞</span><b>${p.fort}</b></div><div class="pstat"><span>相邻地区</span><b>${p.n.length}</b></div></div></div>
+  <div class="actionSection"><div class="panelTitle">可执行行动</div><div class="actionGrid">
+    <button class="actionBtn" ${mine?'':'disabled'} onclick="developProvince()"><strong>发展工业</strong><small>国库 35</small></button>
+    <button class="actionBtn" ${mine?'':'disabled'} onclick="fortifyProvince()"><strong>修筑要塞</strong><small>国库
