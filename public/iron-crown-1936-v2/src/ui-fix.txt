@@ -1,0 +1,24 @@
+'use strict';
+function researchSnapshot(c,id){
+  const level=c.tech[id]||0,cost=TECH[id].cost+level*35;
+  const progress=id===c.activeResearch?clamp(Number(c.researchProgress)||0,0,cost):0;
+  const percent=cost?clamp(progress/cost*100,0,100):0;
+  const rate=Math.max(1,Number(c.researchRate)||COUNTRY[G.player]?.research||8);
+  return{level,cost,progress,percent,remaining:Math.max(0,Math.ceil((cost-progress)/rate))};
+}
+function renderLeft(){
+  const c=G.countries[G.player],n=nationalSummary(G.player);
+  $('#nationDot').style.background=c.color;$('#nationName').textContent=c.name;$('#nationIdeology').textContent=c.ideology;
+  $('#stabText').textContent=`${Math.round(c.stability)}%`;$('#warText').textContent=`${Math.round(c.war)}%`;$('#stabBar').style.width=`${clamp(c.stability,0,100)}%`;$('#warBar').style.width=`${clamp(c.war,0,100)}%`;
+  $('#overview').innerHTML=`<div class="mini"><small>总人口</small><b>${c.population.toFixed(1)}M</b></div><div class="mini"><small>现役兵力</small><b>${n.armyManpower}K</b></div><div class="mini"><small>控制州</small><b>${n.states}</b></div><div class="mini"><small>胜利点</small><b>${n.victory}</b></div>`;
+  $('#lawbox').innerHTML=`征兵法：<b>${c.laws}</b><br>经济法：<b>${c.economy==='war'?'战时经济':'民用经济'}</b><br>科研能力：<b>${Math.round(c.researchRate)} 点/月</b><br>当前项目：<b>${c.activeResearch?TECH[c.activeResearch].name:'空闲'}</b>`;
+}
+function drawResearch(d){
+  const c=G.countries[G.player],rate=Math.round(c.researchRate||COUNTRY[G.player].research||8);
+  d.innerHTML=drawerHead('国家科研')+`<div class="lawbox">科研能力：每月 ${rate} 点。一次只能研究一个项目；进度会在每次“推进一个月”后增加。</div><div class="cards research-cards">${Object.entries(TECH).map(([id,t])=>{const s=researchSnapshot(c,id),active=c.activeResearch===id,locked=!!c.activeResearch&&!active;return `<div class="card research-card ${active?'research-active':''}"><div class="research-title"><h4>${t.name}</h4><span>Lv.${s.level}/4</span></div><p>${t.desc}</p>${active?`<div class="row"><span>研究进度</span><b>${Math.round(s.progress)} / ${s.cost}（${Math.round(s.percent)}%）</b></div><div class="build-progress research-progress" role="progressbar" aria-valuenow="${Math.round(s.percent)}" aria-valuemin="0" aria-valuemax="100"><i style="width:${s.percent.toFixed(2)}%"></i></div><div class="row research-eta"><span>预计剩余</span><b>${s.remaining} 个月</b></div>`:`<button class="btn tiny" style="width:100%;margin-top:7px" ${locked||s.level>=4?'disabled':''} onclick="research('${id}')">${s.level>=4?'已完成':locked?'已有项目进行中':'开始研究'}</button>`}</div>`}).join('')}</div>`;
+}
+function research(id){if(startResearch(G.player,id)){log(`开始研究：${TECH[id].name}。`,'good');toast(`开始研究：${TECH[id].name}`,'good');drawResearch($('#drawer'));renderAll()}}
+function nextTurn(){
+  try{endTurn();renderAll();const open=$('.nav.active')?.dataset.tab;if(open&&open!=='map')openDrawer(open);toast('新月份开始','good')}
+  catch(error){console.error(error);toast(`推进失败：${error.message}`,'bad')}
+}
