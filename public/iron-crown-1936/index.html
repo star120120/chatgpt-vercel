@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0b1220">
+<title>铁与王冠：1936</title>
+<style>
+html,body{margin:0;width:100%;height:100%;background:#0b1220;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif}#loading{position:fixed;inset:0;display:grid;place-items:center;text-align:center;padding:24px}b{font-family:Georgia,"Songti SC",serif;font-size:34px}small{display:block;margin-top:12px;color:#9fb0c7;line-height:1.7;font-size:14px}
+</style>
+</head>
+<body>
+<div id="loading"><div><b>铁与王冠：1936</b><small>正在载入 iPad 全屏版……<br>建议横屏游玩</small></div></div>
+<script>
+(async()=>{
+  const files=['plain/0.txt','plain/1.txt','plain/2.txt','plain/3.txt','plain/04.txt','plain/05.txt','plain/06.txt','plain/07.txt','plain/08.txt','plain/09.txt','plain/10.txt','plain/11.txt','plain/12.txt','plain/13.txt','plain/14.txt','plain/15.txt'];
+  try{
+    const parts=await Promise.all(files.map(async f=>{const r=await fetch(f,{cache:'no-store'});if(!r.ok)throw new Error(`${f} (${r.status})`);return r.text()}));
+    document.open();document.write(parts.join(''));document.close();
+  }catch(e){document.getElementById('loading').innerHTML=`<div><b>载入失败</b><small>请确认网络连接并刷新页面。<br>${e.message}</small></div>`}
+})();
+</script>
+</body>
+</html>
