@@ -1,0 +1,97 @@
+const setRelation=(a,b,v)=>G.relations[pair(a,b)]=clamp(v,-100,100);
+const stateNeighbors=id=>(MAP_ADJ[id]||[]).filter(x=>G.states[x]);
+const ownerNeighbors=id=>stateNeighbors(id).map(x=>G.states[x].owner);
+const hasBorder=(a,b)=>countryStates(a).some(s=>stateNeighbors(s.id).some(n=>G.states[n].owner===b));
+const activeWars=c=>Object.keys(G.countries).filter(o=>atWar(c,o));
+const log=(text,type='')=>{G.log.unshift({date:`${G.year}.${String(G.month).padStart(2,'0')}`,text,type});G.log=G.log.slice(0,180)};
+const countryAlive=c=>countryStates(c).length>0;
+function setAdjacency(adj){MAP_ADJ=adj;}
+function relationSeed(a,b){
+ const hostile=[['GER','FRA'],['GER','UK'],['GER','POL'],['GER','USSR'],['ITA','FRA'],['USSR','POL'],['HUN','CZE'],['HUN','ROM'],['HUN','YUG']].some(x=>x.includes(a)&&x.includes(b));
+ const friendly=[['FRA','UK'],['GER','ITA'],['ROM','FRA'],['CZE','FRA'],['POL','FRA'],['POL','UK']].some(x=>x.includes(a)&&x.includes(b));
+ return hostile?-35:friendly?25:Math.floor(Math.random()*15)-7;
+}
+function createGame(player='GER',difficulty='normal'){
+ const countries={};
+ for(const [code,c] of Object.entries(COUNTRY)) countries[code]={...deep(c),tech:{industry:0,construction:0,infantry:0,artillery:0,armor:0,logistics:0,radio:0},research:null,researchProgress:0,construction:[],training:[],mobilization:'limited',economy:'civilian',alive:true};
+ const states={};for(const s of STATES) states[s.id]={...deep(s),controller:s.owner,fort:0,airbase:s.capital?1:0,rail:s.infra>=7?2:1,divisions:[],damage:0,build:null};
+ const relations={};const codes=Object.keys(countries);for(let i=0;i<codes.length;i++)for(let j=i+1;j<codes.length;j++)relations[pair(codes[i],codes[j])]=relationSeed(codes[i],codes[j]);
+ G={version:2,player,difficulty,year:1936,month:1,turn:1,countries,states,relations,wars:{},pacts:{},log:[],events:{},selected:null,gameOver:false};
+ if(difficulty==='easy'){countries[player].manpower+=250;countries[player].stability=clamp(countries[player].stability+7,0,100);for(const k of Object.keys(countries[player].stock))countries[player].stock[k]*=1.25;}
+ if(difficulty==='hard'){countries[player].stability-=5;for(const [k,c] of Object.entries(countries))if(k!==player){c.manpower*=1.15;for(const x of Object.keys(c.stock))c.stock[x]*=1.12;}}
+ distributeInitialArmies();normalizeProduction();
+ log(`你开始领导${countries[player].name}。真实地理与国家经营模式已启用。`,'good');return G;
+}
+function normalizeProduction(){for(const [code,c] of Object.entries(G.countries)){const mil=totalFactories(code,'mil');let used=Object.values(c.prod).reduce((a,b)=>a+b,0);if(used>mil&&used){const ratio=mil/used;for(const k of Object.keys(c.prod))c.prod[k]=Math.floor(c.prod[k]*ratio);used=Object.values(c.prod).reduce((a,b)=>a+b,0);while(used<mil){c.prod.rifle++;used++;}}}}
+function distributeInitialArmies(){
+ for(const [code,c] of Object.entries(G.countries)){
+  const own=countryStates(code);if(!own.length)continue;
+  const border=own.filter(s=>stateNeighbors(s.id).some(n=>G.states[n]&&G.states[n].owner!==code));
+  const pool=border.length?border:own;
+  let serial=1;
+  for(const type of ['inf','mot','arm'])for(let i=0;i<(c.army[type]||0);i++){
+   const target=pool[i%pool.length];target.divisions.push(makeDivision(code,type,serial++));
+  }
+ }
+}
+function makeDivision(owner,type,serial){return{id:`${owner}-${Date.now().toString(36)}-${serial}-${Math.random().toString(36).slice(2,5)}`,owner,type,name:`第${serial}${TEMPLATE[type].name}`,strength:100,org:80+Math.random()*18,exp:Math.random()*18,equip:92+Math.random()*8,entrench:0};}
+function nationalSummary(code){
+ const c=G.countries[code],states=countryStates(code),divs=countryDivisions(code);return{population:c.population,manpower:Math.round(c.manpower),civ:totalFactories(code,'civ'),mil:totalFactories(code,'mil'),divisions:divs.length,armyManpower:Math.round(divs.reduce((n,d)=>n+TEMPLATE[d.type].mp*d.strength/100,0)/1000),victory:states.reduce((n,s)=>n+s.civ*3+s.mil*4+(s.capital?15:0),0),states:states.length};
+}
+function productionCapacity(code){const c=G.countries[code],mil=totalFactories(code,'mil');return{mil,used:Object.values(c.prod).reduce((a,b)=>a+b,0)};}
+function changeProduction(item,delta){const c=G.countries[G.player],cap=productionCapacity(G.player);if(delta>0&&cap.used>=cap.mil)return false;c.prod[item]=Math.max(0,(c.prod[item]||0)+delta);return true;}
+function monthlyProduction(code){
+ const c=G.countries[code];if(!c.alive)return;
+ const output=(1+c.tech.industry*.08)*(c.economy==='war'?1.15:1)*(c.stability/100*.35+.65);
+ c.stock.rifle+=Math.round(c.prod.rifle*680*output);c.stock.artillery+=Math.round(c.prod.artillery*28*output);c.stock.tank+=Math.round(c.prod.tank*13*output);c.stock.truck+=Math.round(c.prod.truck*90*output);
+ const oilStates=countryStates(code).filter(s=>s.res.includes('油')).length;c.stock.fuel+=Math.round(10000+oilStates*28000+c.prod.truck*500);c.stock.fuel=Math.min(c.stock.fuel,900000);
+}
+function queueConstruction(stateId,type){const s=G.states[stateId],c=G.countries[G.player];if(!s||s.owner!==G.player||s.build)return false;const costs={civ:120,mil:110,infra:75,fort:65,rail:85};s.build={type,progress:0,cost:costs[type]};log(`${s.name}开始建设${buildingName(type)}。`,'good');return true;}
+function buildingName(t){return({civ:'民用工厂',mil:'军用工厂',infra:'基础设施',fort:'要塞',rail:'铁路'})[t]||t;}
+function monthlyConstruction(code){
+ const c=G.countries[code],queue=countryStates(code).filter(s=>s.build);if(!queue.length)return;let points=totalFactories(code,'civ')*4*(1+c.tech.construction*.1)*(c.economy==='war'?.82:1);for(const s of queue){if(points<=0)break;const add=Math.min(points,s.build.cost-s.build.progress);s.build.progress+=add;points-=add;if(s.build.progress>=s.build.cost){const t=s.build.type;if(t==='civ')s.civ++;if(t==='mil')s.mil++;if(t==='infra')s.infra=Math.min(10,s.infra+1);if(t==='fort')s.fort=Math.min(5,s.fort+1);if(t==='rail')s.rail=Math.min(5,s.rail+1);log(`${s.name}的${buildingName(t)}建设完成。`,code===G.player?'good':'');s.build=null;normalizeProduction();}}
+}
+function queueDivision(stateId,type){const s=G.states[stateId],c=G.countries[G.player],t=TEMPLATE[type];if(!s||s.owner!==G.player)return false;if(c.manpower<t.mp/1000)return false;c.manpower-=t.mp/1000;c.training.push({stateId,type,months:type==='arm'?5:type==='mot'?4:3,progress:0});log(`${s.name}开始训练一个${t.name}。`,'good');return true;}
+function monthlyTraining(code){const c=G.countries[code];for(let i=c.training.length-1;i>=0;i--){const q=c.training[i];q.progress++;if(q.progress<q.months)continue;const t=TEMPLATE[q.type],st=c.stock;const need={rifle:t.rifle,artillery:t.artillery,tank:t.tank,truck:t.truck};let ratio=1;for(const k of Object.keys(need))if(need[k]>0)ratio=Math.min(ratio,st[k]/need[k]);if(ratio<.45){q.progress=q.months-1;continue}for(const k of Object.keys(need))st[k]-=Math.round(need[k]*Math.min(1,ratio));const s=G.states[q.stateId]&&G.states[q.stateId].owner===code?G.states[q.stateId]:countryStates(code)[0];if(s){const d=makeDivision(code,q.type,countryDivisions(code).length+1);d.equip=clamp(ratio*100,45,100);d.org=45;s.divisions.push(d);log(`${s.name}部署了新的${t.name}。`,code===G.player?'good':'')}c.training.splice(i,1);}}
+function replenish(code){
+ const c=G.countries[code];for(const d of countryDivisions(code)){const t=TEMPLATE[d.type];const missing=(100-d.strength)/100;if(missing>0&&c.manpower>0){const mp=Math.min(c.manpower,t.mp/1000*missing*.35);d.strength=clamp(d.strength+mp/(t.mp/1000)*100,0,100);c.manpower-=mp}const equipMissing=(100-d.equip)/100;if(equipMissing>0){let possible=1;const needs={rifle:t.rifle,artillery:t.artillery,tank:t.tank,truck:t.truck};for(const [k,v] of Object.entries(needs))if(v)possible=Math.min(possible,c.stock[k]/(v*equipMissing));const fill=Math.min(equipMissing,possible*.3);for(const [k,v] of Object.entries(needs))c.stock[k]-=Math.max(0,Math.round(v*fill));d.equip=clamp(d.equip+fill*100,0,100)}d.org=clamp(d.org+8*(1+c.tech.radio*.1),0,100);d.entrench=clamp(d.entrench+4,0,30);}}
+function supplyCapacity(s){return 2+s.infra*2+s.rail*2+(s.capital?8:0);}
+function stateSupplyRatio(s){const need=s.divisions.reduce((n,d)=>n+(d.type==='arm'?3:d.type==='mot'?2.2:1.5),0);return need?clamp(supplyCapacity(s)/need,.25,1):1;}
+function divisionPower(d,mode,state){const t=TEMPLATE[d.type],c=G.countries[d.owner],tech=(d.type==='arm'?c.tech.armor:c.tech.infantry)*.07+c.tech.artillery*.035;const base=mode==='attack'?t.attack:t.defense;return base*(d.strength/100)*(d.org/100)*(d.equip/100)*(1+tech)*(1+d.exp/200)*stateSupplyRatio(state);}
+function terrainDefense(t){return({平原:0,丘陵:.12,高地:.16,高原:.12,森林:.18,城市:.22,山地:.32,沼泽:.28})[t]||0;}
+function canMove(from,to){return !!G.states[from]&&!!G.states[to]&&stateNeighbors(from).includes(to);}
+function moveDivisions(from,to,count){const a=G.states[from],b=G.states[to];if(!canMove(from,to)||a.owner!==G.player||b.owner!==G.player)return false;const movable=a.divisions.slice(0,Math.min(count,a.divisions.length));if(!movable.length)return false;a.divisions=a.divisions.filter(d=>!movable.includes(d));b.divisions.push(...movable);for(const d of movable){d.org=Math.max(25,d.org-8);d.entrench=0}log(`${movable.length}个师从${a.name}调往${b.name}。`,'good');return true;}
+function attackState(from,to,count,attacker=G.player){
+ const a=G.states[from],b=G.states[to];if(!canMove(from,to)||a.owner!==attacker||b.owner===attacker||!atWar(attacker,b.owner))return null;
+ const selected=a.divisions.slice(0,Math.min(count,a.divisions.length));if(!selected.length)return null;const defenders=[...b.divisions],defOwner=b.owner;
+ const weather=(G.month===12||G.month<=2)?.88:1;let atk=selected.reduce((n,d)=>n+divisionPower(d,'attack',a),0)*weather;let def=defenders.reduce((n,d)=>n+divisionPower(d,'defense',b),0)*(1+terrainDefense(b.terrain)+b.fort*.12);if(!defenders.length)def=5*(1+terrainDefense(b.terrain));
+ const aFuel=selected.reduce((n,d)=>n+TEMPLATE[d.type].fuel,0)*1000;if(aFuel>0){const c=G.countries[attacker],ratio=clamp(c.stock.fuel/aFuel,.35,1);atk*=ratio;c.stock.fuel=Math.max(0,c.stock.fuel-aFuel*.18)}
+ atk*=.82+Math.random()*.36;def*=.82+Math.random()*.36;const won=atk>def*1.05;const intensity=clamp((atk+def)/Math.max(1,selected.length+defenders.length)/45,.5,1.8);
+ applyLosses(selected,won?.12:.26,intensity);applyLosses(defenders,won?.34:.16,intensity);
+ selected.forEach(d=>{d.org=clamp(d.org-(won?18:30),0,100);d.entrench=0});defenders.forEach(d=>d.org=clamp(d.org-(won?35:20),0,100));
+ removeDestroyed(a);removeDestroyed(b);
+ if(won||b.divisions.length===0){const retreat=stateNeighbors(to).find(n=>G.states[n].owner===defOwner&&n!==from);if(retreat&&b.divisions.length)G.states[retreat].divisions.push(...b.divisions);b.divisions=[];a.divisions=a.divisions.filter(d=>!selected.includes(d));b.divisions.push(...selected);b.owner=attacker;b.controller=attacker;b.damage=Math.min(60,b.damage+20);G.countries[attacker].war=clamp(G.countries[attacker].war+1,0,100);G.countries[defOwner].stability=clamp(G.countries[defOwner].stability-(b.capital?9:2),0,100);log(`${G.countries[attacker].short}攻占${b.name}${b.capital?'，首都陷落':''}。`,attacker===G.player?'good':'bad');checkCountry(defOwner)}else log(`${G.countries[attacker].short}对${b.name}的攻势被击退。`,attacker===G.player?'bad':'good');
+ return{won,attack:Math.round(atk),defense:Math.round(def),attackerLoss:selected.reduce((n,d)=>n+(100-d.strength),0),defender: G.countries[defOwner].short};
+}
+function applyLosses(divs,rate,intensity){for(const d of divs){const loss=rate*intensity*(.7+Math.random()*.6)*100;d.strength=clamp(d.strength-loss,0,100);d.equip=clamp(d.equip-loss*.75,0,100);d.exp=clamp(d.exp+2+Math.random()*3,0,100);}}
+function removeDestroyed(s){s.divisions=s.divisions.filter(d=>d.strength>12);}
+function checkCountry(code){if(!countryAlive(code)){G.countries[code].alive=false;for(const k of Object.keys(G.wars))if(k.includes(code))delete G.wars[k];log(`${G.countries[code].name}已经投降。`,'bad')}}
+function startResearch(code,id){const c=G.countries[code];if(c.research||c.tech[id]>=4)return false;c.research=id;c.researchProgress=0;return true;}
+function monthlyResearch(code){const c=G.countries[code];if(!c.research)return;c.researchProgress+=c.research*(1+c.tech.radio*.04);const cost=TECH[c.research].cost+c.tech[c.research]*35;if(c.researchProgress>=cost){const id=c.research;c.tech[id]++;c.research=null;c.researchProgress=0;log(`${c.short}完成科技：${TECH[id].name} ${c.tech[id]}级。`,code===G.player?'good':'')}}
+function improveRelations(target){const c=G.countries[G.player];if(c.pp<20)return false;c.pp-=20;setRelation(G.player,target,relation(G.player,target)+18);return true;}
+function signPact(target){if(relation(G.player,target)<25||atWar(G.player,target))return false;G.pacts[pair(G.player,target)]=true;setRelation(G.player,target,relation(G.player,target)+8);return true;}
+function declareWar(a,b){if(atWar(a,b)||!G.countries[b]?.alive)return false;if(G.pacts[pair(a,b)]){delete G.pacts[pair(a,b)];G.countries[a].stability-=8}G.wars[pair(a,b)]=true;setRelation(a,b,-100);G.countries[a].war=clamp(G.countries[a].war+5,0,100);G.countries[b].war=clamp(G.countries[b].war+8,0,100);log(`${G.countries[a].name}向${G.countries[b].name}宣战。`,'bad');return true;}
+function mobilize(){const c=G.countries[G.player];if(c.pp<60||c.mobilization==='extensive')return false;c.pp-=60;if(c.mobilization==='limited'){c.mobilization='partial';c.manpower+=Math.round(c.population*1000*.008);c.stability-=4;c.laws='部分动员'}else{c.mobilization='extensive';c.manpower+=Math.round(c.population*1000*.014);c.stability-=7;c.laws='扩大征兵'}return true;}
+function warEconomy(){const c=G.countries[G.player];if(c.pp<70||c.war<50||c.economy==='war')return false;c.pp-=70;c.economy='war';c.stability-=3;return true;}
+function propaganda(){const c=G.countries[G.player];if(c.pp<35)return false;c.pp-=35;c.war=clamp(c.war+8,0,100);c.stability=clamp(c.stability-1,0,100);return true;}
+function monthlyPolitics(code){const c=G.countries[code];c.pp+=2+(c.stability>70?1:0);c.stability=clamp(c.stability+(activeWars(code).length?-.08:.12),0,100);c.war=clamp(c.war+(activeWars(code).length?.15:-.04),0,100);c.manpower+=Math.max(.2,c.population*.015);}
+function endTurn(){if(G.gameOver)return;for(const code of Object.keys(G.countries)){if(!G.countries[code].alive)continue;monthlyProduction(code);monthlyConstruction(code);monthlyTraining(code);monthlyResearch(code);replenish(code);monthlyPolitics(code)}aiTurn();advanceDate();historicalEvents();randomEvent();saveGame(false);checkEnd();}
+function advanceDate(){G.month++;G.turn++;if(G.month>12){G.month=1;G.year++}}
+function historicalEvents(){
+ const key=`${G.year}-${String(G.month).padStart(2,'0')}`;
+ if(key==='1936-03'&&!G.events.rhineland){G.events.rhineland=true;G.countries.GER.war+=4;setRelation('GER','FRA',relation('GER','FRA')-8);log('莱茵兰再军事化使欧洲外交局势进一步紧张。','bad')}
+ if(key==='1936-07'&&!G.events.spain){G.events.spain=true;G.countries.ESP.stability-=18;G.countries.ESP.war+=12;log('西班牙爆发大规模内战，伊比利亚局势陷入混乱。','bad')}
+ if(key==='1938-03'&&!G.events.anschluss&&G.countries.AUT.alive&&G.countries.GER.alive){G.events.anschluss=true;if(G.player==='GER')G.pendingEvent='anschluss';else if(Math.random()<.82)annexCountry('GER','AUT','德奥合并')}
+ if(key==='1938-09'&&!G.events.munich&&G.countries.CZE.alive&&G.countries.GER.alive){G.events.munich=true;setRelation('GER','CZE',-80);G.countries.CZE.war+=12;log('苏台德危机将中欧推向战争边缘。','bad')}
+ if(key==='1939-09'&&!G.events.danzig&&G.countries.POL.alive&&G.countries.GER.alive){G.events.danzig=true;if(!atWar('GER','POL')&&Math.random()<.78)declareWar('GER','POL')}
+}
