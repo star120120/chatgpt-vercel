@@ -22,3 +22,4 @@ function nextTurn(){
   try{endTurn();renderAll();const open=$('.nav.active')?.dataset.tab;if(open&&open!=='map')openDrawer(open);toast('新月份开始','good')}
   catch(error){console.error(error);toast(`推进失败：${error.message}`,'bad')}
 }
+$('#endTurn').onclick=nextTurn;
