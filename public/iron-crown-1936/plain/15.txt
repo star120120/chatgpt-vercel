@@ -1,0 +1,5 @@
+
+window.addEventListener('resize',()=>{if(innerWidth>760)document.getElementById('rightPanel').classList.remove('open')});
+</script>
+</body>
+</html>
