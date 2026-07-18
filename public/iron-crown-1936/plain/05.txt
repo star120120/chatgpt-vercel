@@ -1,0 +1,24 @@
+('http://www.w3.org/2000/svg','text');d.setAttribute('x',p.x);d.setAttribute('y',p.y+25);d.setAttribute('class','devLabel');d.textContent=`工 ${p.industry}  堡 ${p.fort}`;
+    g.append(poly,t,a,d);g.onclick=()=>provinceClick(id);grp.appendChild(g);
+  });
+  applyTransform();
+}
+function renderMap(){
+  document.querySelectorAll('.province').forEach(g=>{
+    const id=g.dataset.id,p=game.provinces[id],c=game.countries[p.owner];g.querySelector('.provinceHex').setAttribute('fill',c?c.color:'#555');
+    g.querySelector('.armyLabel').textContent=`⚔ ${p.army}`;g.querySelector('.devLabel').textContent=`工 ${p.industry}  堡 ${p.fort}`;
+    g.classList.toggle('selected',id===selectedProvince);g.classList.remove('attackable','friendlyTarget');
+    if(actionMode&&selectedProvince){const o=game.provinces[selectedProvince];if(o.n.includes(id)){if(actionMode==='attack'&&p.owner!==o.owner)g.classList.add('attackable');if(actionMode==='move'&&p.owner===o.owner)g.classList.add('friendlyTarget')}}
+  });
+}
+function provinceClick(id){
+  if(actionMode&&selectedProvince&&id!==selectedProvince){const from=selectedProvince;if(actionMode==='attack')attemptAttack(from,id);else if(actionMode==='move')moveArmy(from,id);actionMode=null;selectedProvince=id;renderAll();return}
+  selectedProvince=id;actionMode=null;renderAll();if(innerWidth<=760)document.getElementById('rightPanel').classList.add('open');
+}
+function applyTransform(){document.getElementById('provinces').setAttribute('transform',`translate(${transform.x} ${transform.y}) scale(${transform.scale})`);document.getElementById('connections').setAttribute('transform',`translate(${transform.x} ${transform.y}) scale(${transform.scale})`)}
+function zoom(delta){transform.scale=clamp(transform.scale+delta,.65,1.8);applyTransform()}
+
+function renderAll(){if(!game)return;renderTop();renderLeft();renderMap();renderInspector();checkGameOver()}
+function renderTop(){
+  const c=currentCountry();
+  document.getElementById('playerNameTop').textContent=c.short;document.getElementById('moneyStat').textContent=fmt(c.money);document.getElementById('industryStat').textContent=countryIndustry(game.player);document.getElementById('manpowerStat').textContent=fmt(c.manpower);document.getElementById('stabilityStat').textContent=`${fmt(c.stability)}%`;document.getElementById('warStat').textContent=`${fmt(c.warSupport)}%`;document.getElementById('scoreStat').textCo
