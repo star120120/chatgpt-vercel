@@ -1,0 +1,59 @@
+name: Mirror Iron Crown V3 Map Data
+
+on:
+  push:
+    paths:
+      - '.github/workflows/mirror-iron-crown-v3-map.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  mirror-map-data:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Download historical borders and ADM1 regions
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE='public/iron-crown-1936-v3/geo'
+          mkdir -p "$BASE/adm1"
+
+          curl --fail --location --retry 4 \
+            'https://raw.githubusercontent.com/aourednik/historical-basemaps/master/geojson/world_1930.geojson' \
+            --output "$BASE/world_1930.geojson"
+
+          ISO_CODES='DEU POL RUS FRA GBR UKR BLR GEO ARM AZE ITA ESP TUR CZE SVK ROU MDA SRB HRV SVN BIH MKD MNE GRC AUT HUN BEL NLD CHE PRT BGR FIN SWE NOR DNK EST LVA LTU IRL ALB LUX'
+          : > "$BASE/adm1-manifest.txt"
+
+          for iso in $ISO_CODES; do
+            echo "Downloading ADM1: $iso"
+            meta="$(curl --fail --location --retry 3 "https://www.geoboundaries.org/api/current/gbOpen/${iso}/ADM1/" || true)"
+            url="$(printf '%s' "$meta" | jq -r '.simplifiedGeometryGeoJSON // .gjDownloadURL // empty' 2>/dev/null || true)"
+            if [ -z "$url" ]; then
+              echo "No ADM1 URL for $iso; skipping"
+              continue
+            fi
+            if curl --fail --location --retry 3 "$url" --output "$BASE/adm1/${iso}.geojson"; then
+              echo "$iso" >> "$BASE/adm1-manifest.txt"
+            else
+              rm -f "$BASE/adm1/${iso}.geojson"
+            fi
+          done
+
+      - name: Commit mirrored map data
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add public/iron-crown-1936-v3/geo
+          if git diff --cached --quiet; then
+            echo 'No map data changes.'
+            exit 0
+          fi
+          git commit -m 'Mirror Iron Crown V3 map data'
+          git push
