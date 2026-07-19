@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#07111d">
+<title>铁与王冠：1936 · V4战略系统版</title>
+<link rel="stylesheet" href="style.css?v=4b1">
+</head>
+<body>
+<section id="bootScreen" class="screen boot-screen">
+  <div class="boot-card">
+    <div class="boot-symbol">♜</div>
+    <h1>铁与王冠：1936</h1>
+    <p id="bootText">正在载入全欧洲历史地图与行政区……</p>
+    <div class="boot-progress"><i id="bootProgress"></i></div>
+    <small id="bootDetail">准备地图引擎</small>
+  </div>
+</section>
+
+<section id="startScreen" class="screen start-screen hidden">
+  <div class="start-wrap">
+    <div class="eyebrow">V4 · Continuous Grand Strategy</div>
+    <h1>铁与王冠：1936</h1>
+    <p class="start-description">连续时间运行的大战略系统。管理工业、资源、师编制、将领、战线、陆海空任务、政策、外交、科研与省份治理。</p>
+    <div class="start-panel">
+      <div class="panel-caption">选择国家</div>
+      <div id="countryGrid" class="country-grid"></div>
+      <div class="start-options">
+        <label>难度
+          <select id="difficultySelect">
+            <option value="easy">新手</option>
+            <option value="normal" selected>标准</option>
+            <option value="hard">老兵</option>
+          </select>
+        </label>
+        <label class="switch"><input id="startAutoFocus" type="checkbox" checked><span>点选区域轻微聚焦</span></label>
+        <div class="start-actions">
+          <button id="loadBtn" class="button secondary">读取V4存档</button>
+          <button id="newBtn" class="button primary">开始新游戏</button>
+        </div>
+      </div>
+    </div>
+    <p class="data-note">地图会在进入游戏前自动加载全部可用行政区，不再需要逐国点击。未收录中文专名的地区会使用中文编号，不显示英文地名。</p>
+  </div>
+</section>
+
+<section id="gameScreen" class="screen game-screen hidden">
+  <header class="topbar">
+    <button id="countryButton" class="country-chip"><i id="countryColor"></i><span><b id="topCountry">德国</b><small id="topIdeology">威权主义</small></span></button>
+    <div class="resource-strip">
+      <div class="resource"><small>政治点数</small><b id="topPP">0</b></div>
+      <div class="resource"><small>行政点数</small><b id="topAdmin">0</b></div>
+      <div class="resource"><small>指挥点数</small><b id="topCommand">0</b></div>
+      <div class="resource"><small>可用人力</small><b id="topManpower">0K</b></div>
+      <div class="resource"><small>民用工厂</small><b id="topCiv">0</b></div>
+      <div class="resource"><small>军用工厂</small><b id="topMil">0</b></div>
+      <div class="resource"><small>海军船坞</small><b id="topDock">0</b></div>
+      <div class="resource"><small>燃料</small><b id="topFuel">0K</b></div>
+      <div class="resource tension"><small>世界紧张度</small><b id="topTension">0%</b></div>
+    </div>
+    <div class="time-box">
+      <div class="time-controls">
+        <button data-speed="0" class="speed-button active" title="暂停">Ⅱ</button>
+        <button data-speed="1" class="speed-button" title="正常速度">▶</button>
+        <button data-speed="2" class="speed-button" title="2倍速度">▶▶</button>
+        <button data-speed="4" class="speed-button" title="4倍速度">▶▶▶</button>
+      </div>
+      <b id="topDate">1936年1月1日</b><small id="topDay">第1天 · 已暂停</small>
+    </div>
+  </header>
+
+  <main class="game-layout">
+    <nav class="side-nav">
+      <button data-panel="country" class="nav-button active"><b>国</b><span>国家</span></button>
+      <button data-panel="politics" class="nav-button"><b>政</b><span>政策</span></button>
+      <button data-panel="research" class="nav-button"><b>研</b><span>科研</span></button>
+      <button data-panel="production" class="nav-button"><b>厂</b><span>军工</span></button>
+      <button data-panel="shipyard" class="nav-button"><b>船</b><span>船坞</span></button>
+      <button data-panel="construction" class="nav-button"><b>建</b><span>建设</span></button>
+      <button data-panel="army" class="nav-button"><b>陆</b><span>陆军</span></button>
+      <button data-panel="air" class="nav-button"><b>空</b><span>空军</span></button>
+      <button data-panel="navy" class="nav-button"><b>海</b><span>海军</span></button>
+      <button data-panel="logistics" class="nav-button"><b>运</b><span>后勤</span></button>
+      <button data-panel="diplomacy" class="nav-button"><b>外</b><span>外交</span></button>
+      <button data-panel="administration" class="nav-button"><b>行</b><span>行政</span></button>
+      <button data-panel="log" class="nav-button"><b>志</b><span>日志</span></button>
+    </nav>
+
+    <section class="map-stage">
+      <svg id="strategyMap" viewBox="0 0 1600 1000" aria-label="欧洲历史战略地图">
+        <defs></defs>
+        <rect class="ocean" width="1600" height="1000"></rect>
+        <g id="mapWorld">
+          <g id="countryLayer"></g>
+          <g id="provinceLayer"></g>
+          <g id="frontLayer"></g>
+          <g id="borderLayer"></g>
+          <g id="labelLayer"></g>
+          <g id="unitLayer"></g>
+        </g>
+      </svg>
+      <div class="map-mode-bar">
+        <button data-map-mode="political" class="map-mode active">政治</button>
+        <button data-map-mode="terrain" class="map-mode">地形</button>
+        <button data-map-mode="supply" class="map-mode">补给</button>
+        <button data-map-mode="industry" class="map-mode">工业</button>
+        <button data-map-mode="administration" class="map-mode">行政</button>
+        <button data-map-mode="fronts" class="map-mode">战线</button>
+      </div>
+      <div class="map-options">
+        <label><input id="autoFocusToggle" type="checkbox" checked> 轻微聚焦</label>
+        <label><input id="labelToggle" type="checkbox" checked> 中文地名</label>
+        <button id="resetViewBtn">完整地图</button>
+      </div>
+      <div id="frontHint" class="front-hint hidden"></div>
+      <div id="selectionBar" class="selection-bar hidden">
+        <div><small>已选择部队</small><b id="selectedCount">0个师</b></div>
+        <button id="moveBtn">战略调动</button>
+        <button id="frontBtn" class="danger">建立战线</button>
+        <button id="clearBtn">取消</button>
+      </div>
+    </section>
+
+    <aside id="inspector" class="inspector">
+      <div class="inspector-head"><span>省份与部队</span><button id="closeInspector">×</button></div>
+      <div id="inspectorContent" class="inspector-content"><div class="empty-state"><b>请选择省份</b><span>地图已完整载入。点选地区可查看发展度、工业、资源、补给、天气和驻军。</span></div></div>
+    </aside>
+  </main>
+
+  <footer class="bottom-bar">
+    <button id="saveBtn" class="footer-button">保存</button>
+    <div class="meter"><span>稳定度</span><b id="bottomStability">0%</b><i><em id="stabilityBar"></em></i></div>
+    <div class="meter"><span>战争支持</span><b id="bottomWar">0%</b><i class="red"><em id="warBar"></em></i></div>
+    <div class="running-status"><span id="runningLabel">已暂停</span><small>时间、生产、建设、科研、补给与战线按天连续结算</small></div>
+  </footer>
+</section>
+
+<section id="systemPanel" class="system-panel hidden">
+  <div class="system-head"><div><small>国家管理系统</small><h2 id="panelTitle">国家</h2></div><button id="closePanel">×</button></div>
+  <div id="panelContent" class="panel-content"></div>
+</section>
+
+<div id="modalBackdrop" class="modal-backdrop hidden"><div id="modalBox" class="modal-box"></div></div>
+<div id="toast" class="toast hidden"></div>
+
+<script src="data.js?v=4b1"></script>
+<script src="map.js?v=4b1"></script>
+<script src="engine.js?v=4b1"></script>
+<script src="ui.js?v=4b1"></script>
+</body>
+</html>
