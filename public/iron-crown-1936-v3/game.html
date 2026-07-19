@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#08111d">
+<title>铁与王冠：1936 · V3</title>
+<style>
+html,body{margin:0;width:100%;height:100%;background:#07101b;color:#edf3f8;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif}.loading{height:100%;display:grid;place-items:center;text-align:center;padding:24px;box-sizing:border-box}.loading h1{font:42px Georgia,"Songti SC",serif;margin:0 0 12px}.loading p{margin:6px;color:#94a7bc}.bar{width:min(420px,80vw);height:8px;margin:18px auto 0;border:1px solid #405874;border-radius:99px;overflow:hidden}.bar i{display:block;width:45%;height:100%;background:linear-gradient(90deg,#99763b,#e0c36e);animation:move 1.1s infinite alternate}@keyframes move{to{transform:translateX(125%)}}
+</style>
+</head>
+<body>
+<div class="loading"><div><h1>铁与王冠：1936</h1><p>正在载入 V3 稳定版……</p><p>历史国界与行政区数据均从同一仓库读取</p><div class="bar"><i></i></div></div></div>
+<script>
+(async()=>{
+ try{
+  const response=await fetch('v3-beta3-fixed.html?stable=1',{cache:'no-store'});
+  if(!response.ok)throw new Error('主页面返回 '+response.status);
+  let html=await response.text();
+  html=html.replace('<script src="map-fixed.js?v=3b3f"><\/script>','<script src="map-data-patch.js?v=stable1"><\/script><script src="map.js?v=stable1"><\/script>');
+  html=html.replace(/V3 Beta 3 Fixed/g,'V3 稳定版');
+  document.open();document.write(html);document.close();
+ }catch(error){
+  document.body.innerHTML='<div class="loading"><div><h1>载入失败</h1><p>'+String(error.message||error)+'</p><p>请在 Safari 中刷新一次。</p></div></div>';
+ }
+})();
+</script>
+</body>
+</html>
