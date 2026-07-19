@@ -1,0 +1,50 @@
+name: Publish Iron Crown V4.1
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/publish-iron-crown-v41.yml'
+      - '.github/iron-crown-v41/**'
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Assemble and verify V4.1 extension
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat .github/iron-crown-v41/part-*.b64 | base64 -d > /tmp/iron-crown-v41-extension.tar.gz
+          echo '2ffbc3cab342d0450a45d72a83dc229fb3767512ca875b2535ed3828c2cfd778  /tmp/iron-crown-v41-extension.tar.gz' | sha256sum -c -
+          rm -rf /tmp/v41 && mkdir -p /tmp/v41
+          tar -xzf /tmp/iron-crown-v41-extension.tar.gz -C /tmp/v41
+          cp -a /tmp/v41/v41payload/. public/iron-crown-1936-v4/
+
+      - name: Validate JavaScript syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check public/iron-crown-1936-v4/core-rules.js
+          node --check public/iron-crown-1936-v4/engine-v41.js
+          node --check public/iron-crown-1936-v4/ux-v41.js
+
+      - name: Commit V4.1 build
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add public/iron-crown-1936-v4
+          if git diff --cached --quiet; then
+            echo 'No V4.1 build changes.'
+            exit 0
+          fi
+          git commit -m 'Publish Iron Crown V4.1 historical geography and war AI'
+          git push
