@@ -1,4 +1,4 @@
-name: Check Iron Crown V4.3.1
+name: Check Iron Crown V4.3.2
 
 on:
   workflow_dispatch:
@@ -9,9 +9,12 @@ on:
       - 'public/iron-crown-1936-v4/systems-v43.js'
       - 'public/iron-crown-1936-v4/engine-v431.js'
       - 'public/iron-crown-1936-v4/engine-v431-hotfix.js'
+      - 'public/iron-crown-1936-v4/engine-v432.js'
       - 'public/iron-crown-1936-v4/ux-v431.js'
       - 'public/iron-crown-1936-v4/ux-v431-intel.js'
+      - 'public/iron-crown-1936-v4/ux-v432.js'
       - 'public/iron-crown-1936-v4/style-v431-hotfix.css'
+      - 'public/iron-crown-1936-v4/style-v432.css'
       - 'public/iron-crown-1936-v4/v4-2.html'
       - '.github/workflows/check-iron-crown-v43.yml'
 
@@ -27,20 +30,25 @@ jobs:
           node --check public/iron-crown-1936-v4/systems-v43.js
           node --check public/iron-crown-1936-v4/engine-v431.js
           node --check public/iron-crown-1936-v4/engine-v431-hotfix.js
+          node --check public/iron-crown-1936-v4/engine-v432.js
           node --check public/iron-crown-1936-v4/ux-v431.js
           node --check public/iron-crown-1936-v4/ux-v431-intel.js
+          node --check public/iron-crown-1936-v4/ux-v432.js
           node --check public/iron-crown-1936-v4/engine-v422.js
           node --check public/iron-crown-1936-v4/ux-v422.js
-      - name: Verify V4.3.1 references
+      - name: Verify V4.3.2 references
         run: |
           grep -q 'map-v431.js' public/iron-crown-1936-v4/v4-2.html
           grep -q 'core-rules-v431.js' public/iron-crown-1936-v4/v4-2.html
           grep -q 'systems-v43.js' public/iron-crown-1936-v4/v4-2.html
           grep -q 'engine-v431.js' public/iron-crown-1936-v4/v4-2.html
           grep -q 'engine-v431-hotfix.js' public/iron-crown-1936-v4/v4-2.html
+          grep -q 'engine-v432.js' public/iron-crown-1936-v4/v4-2.html
           grep -q 'ux-v431.js' public/iron-crown-1936-v4/v4-2.html
           grep -q 'ux-v431-intel.js' public/iron-crown-1936-v4/v4-2.html
+          grep -q 'ux-v432.js' public/iron-crown-1936-v4/v4-2.html
           grep -q 'style-v431.css' public/iron-crown-1936-v4/v4-2.html
           grep -q 'style-v431-hotfix.css' public/iron-crown-1936-v4/v4-2.html
+          grep -q 'style-v432.css' public/iron-crown-1936-v4/v4-2.html
           ! grep -q 'map-v43.js' public/iron-crown-1936-v4/v4-2.html
           ! grep -q 'ux-v43.js' public/iron-crown-1936-v4/v4-2.html
