@@ -19,10 +19,10 @@
     script.onerror = () => console.error(`无法载入V4.2.2模块：${src}`);
     document.head.appendChild(script);
   };
-  load('engine-v422.js?v=422s1', () => load('ux-v422.js?v=422s1'));
+  load('engine-v422.js?v=422s1', () => load('ux-v422.js?v=422s2'));
 
   setInterval(() => {
-    if (!window.GameV4 || GameV4.speed !== 0 || GameV4.__userPaused) return;
+    if (typeof GameV4 === 'undefined' || !GameV4 || GameV4.speed !== 0 || GameV4.__userPaused) return;
     const gameVisible = !document.getElementById('gameScreen')?.classList.contains('hidden');
     if (!gameVisible) return;
     GameV4.__autoStarted = true;
