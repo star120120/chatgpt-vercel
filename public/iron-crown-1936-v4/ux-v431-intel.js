@@ -6,7 +6,29 @@
   window.__IRON_V431_INTEL_ACTIVE__ = true;
   let lastSignature = '';
 
+  function installCountryDeskRenderGuard() {
+    const body = document.getElementById('v431CountryDeskBody');
+    if (!body || body.__v431RenderGuard) return;
+    const descriptor = Object.getOwnPropertyDescriptor(Element.prototype, 'innerHTML');
+    if (!descriptor?.get || !descriptor?.set) return;
+    body.__v431RenderGuard = true;
+    body.__v431LastMarkup = descriptor.get.call(body);
+    Object.defineProperty(body, 'innerHTML', {
+      configurable: true,
+      get() { return descriptor.get.call(this); },
+      set(value) {
+        const focused = this.contains(document.activeElement);
+        const pointerActive = performance.now() < (this.__v431PointerActiveUntil || 0);
+        if (focused || pointerActive || value === this.__v431LastMarkup) return;
+        this.__v431LastMarkup = value;
+        descriptor.set.call(this, value);
+      },
+    });
+    body.addEventListener('pointerdown', () => { body.__v431PointerActiveUntil = performance.now() + 1200; }, true);
+  }
+
   function renderIntelligenceFeed() {
+    installCountryDeskRenderGuard();
     if (typeof GameV4 === 'undefined' || !GameV4) return;
     const oldButton = document.getElementById('v42EventButton');
     const oldCenter = document.getElementById('v42EventCenter');
