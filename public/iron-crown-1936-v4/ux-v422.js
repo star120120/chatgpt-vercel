@@ -95,7 +95,8 @@
 
   function markerAt(layer, coordinate, className, label, title, click) {
     const [x, y] = MapV4.project(coordinate);
-    const group = svgElement('g', { class: `operational-marker ${className}`, transform: `translate(${x} ${y})` });
+    const scale = 1 / Math.max(1, MapV4.getZoom());
+    const group = svgElement('g', { class: `operational-marker ${className}`, transform: `translate(${x} ${y}) scale(${scale})` });
     group.appendChild(svgElement('circle', { cx: 0, cy: 0, r: 12 }));
     const text = svgElement('text', { x: 0, y: 4 });
     text.textContent = label;
@@ -111,7 +112,8 @@
       if (!mapProvince) continue;
       const types = entry.types.slice(0, 3);
       const [x, y] = MapV4.project(mapProvince.center);
-      const group = svgElement('g', { class: 'operational-stack friendly-army', transform: `translate(${x} ${y})`, 'data-province': entry.provinceId });
+      const scale = 1 / Math.max(1, MapV4.getZoom());
+      const group = svgElement('g', { class: 'operational-stack friendly-army', transform: `translate(${x} ${y}) scale(${scale})`, 'data-province': entry.provinceId });
       types.forEach((type, index) => {
         const meta = TYPE_META[type] || TYPE_META.infantry;
         const icon = svgElement('g', { class: `operational-marker ${meta.className}`, transform: `translate(${(index - (types.length - 1) / 2) * 19} 0)` });
@@ -261,7 +263,7 @@
     host.insertBefore(controls, host.firstChild);
     controls.querySelector('button').onclick = () => {
       branch = panel;
-      document.getElementById('systemPanel')?.classList.add('hidden');
+      document.getElementById('closePanel')?.click();
       document.querySelectorAll('[data-military-branch]').forEach(button => button.classList.toggle('active', button.dataset.militaryBranch === panel));
       renderOperationalMarkers(true);
     };
